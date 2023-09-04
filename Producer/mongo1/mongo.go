@@ -8,10 +8,11 @@ import (
 )
 
 var Client *mongo.Client
-var ProductsCollection *mongo.Collection
-var UsersCollection *mongo.Collection
+var Collection *mongo.Collection
 
-func MongoConnect() (*mongo.Client, *mongo.Collection, error) {
+// var UsersCollection *mongo.Collection
+
+func MongoConnect(database string, collection string) (*mongo.Client, *mongo.Collection, error) {
 	// Initialize the MongoDB client
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, err := mongo.Connect(context.Background(), clientOptions)
@@ -19,7 +20,7 @@ func MongoConnect() (*mongo.Client, *mongo.Collection, error) {
 		return nil, nil, err
 	}
 	// Initialize the collections
-	ProductsCollection = client.Database("vinay1").Collection("products")
+	Collection = client.Database(database).Collection(collection)
 	// usersCollection = client.Database("your-database-name").Collection("users")
-	return client, ProductsCollection, nil
+	return client, Collection, nil
 }

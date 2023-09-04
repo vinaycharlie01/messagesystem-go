@@ -23,7 +23,7 @@ func setupTestServer() *gin.Engine {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m1.ProductsCollection = client.Database("vinay1").Collection("products") // Use a test database
+	m1.Collection = client.Database("vinay1").Collection("products") // Use a test database
 
 	// Initialize the Gin router
 	r := gin.Default()

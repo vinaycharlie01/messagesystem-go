@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// Connect to MongoDB and initialize collections
-	client, _, err := m1.MongoConnect()
+	client, _, err := m1.MongoConnect("vinay1", "product")
 	if err != nil {
 		log.Fatal(err)
 	}

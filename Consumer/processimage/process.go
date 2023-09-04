@@ -12,7 +12,7 @@ import (
 )
 
 func ProcessProductimage(a int) {
-	client, productsCollection, err := m1.MongoConnect()
+	client, productsCollection, err := m1.MongoConnect("vinay1", "product")
 	defer client.Disconnect(context.Background())
 	productID := a
 	fmt.Println(a)

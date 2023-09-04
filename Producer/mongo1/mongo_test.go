@@ -15,7 +15,7 @@ func TestMongoConnect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := MongoConnect()
+			_, _, err := MongoConnect("vinay1", "product")
 			if err != nil {
 				t.Errorf("MongoConnect() error = %v, wantErr %v", err, tt.name)
 				return
