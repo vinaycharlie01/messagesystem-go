@@ -20,7 +20,6 @@ func CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	// Generate ObjectID for the product and user
 	product.ID = product.UserID
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
@@ -31,25 +30,20 @@ func CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert product data"})
 		return
 	}
-
-	// Insert the user data into the MongoDB collection
-	// user := t1.User{
-	// 	ID:   product.ID,
-	// 	Name: product.ProductName, // You can change this to the actual user name.
-	// }
-	// _, err = usersCollection.InsertOne(context.Background(), user)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert user data"})
-	// 	return
-	// }
+	// c.Set("productID", strconv.Itoa(product.ID))
+	// CreateUserHandler(c)
+	// CreateUser()
 	// Return the created product as JSON
 	_, err = k1.InsertintoKafka(product.ID)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	CreateUser(product.UserID)
-	// defer conn.Close()
+
+	// _, coll, err := m1.UsersCollection.InsertOne(context.Background(),)
+	user := CreateUser()
+	user.ID = product.UserID
+	m1.UsersCollection.InsertOne(context.Background(), user)
 	c.JSON(http.StatusCreated, gin.H{"message": "Product created successfully", "product": product})
 }
 
@@ -83,11 +77,9 @@ func RandomFloat(min, max float64) float64 {
 	return min + rand.Float64()*(max-min)
 }
 
-func CreateUser(ID int) {
-
-	var user t1.User
-	Userdata := t1.User{
-		ID:        ID,
+func CreateUser() t1.User {
+	// Generate random user data
+	user := t1.User{
 		Name:      RandomName(RandomInts(10)),
 		Mobile:    RandomMobileNumber(10),
 		Latitude:  RandomFloat(10, 2999),
@@ -95,12 +87,5 @@ func CreateUser(ID int) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	user = Userdata
-	clinet, UserCollection, err := m1.MongoConnect("vinay1", "User")
-	_, err = UserCollection.InsertOne(context.Background(), user)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer clinet.Disconnect(context.Background())
-
+	return user
 }

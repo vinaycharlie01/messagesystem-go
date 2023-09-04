@@ -9,8 +9,7 @@ import (
 
 var Client *mongo.Client
 var Collection *mongo.Collection
-
-// var UsersCollection *mongo.Collection
+var UsersCollection *mongo.Collection
 
 func MongoConnect(database string, collection string) (*mongo.Client, *mongo.Collection, error) {
 	// Initialize the MongoDB client
@@ -21,6 +20,6 @@ func MongoConnect(database string, collection string) (*mongo.Client, *mongo.Col
 	}
 	// Initialize the collections
 	Collection = client.Database(database).Collection(collection)
-	// usersCollection = client.Database("your-database-name").Collection("users")
+	UsersCollection = client.Database(database).Collection("users")
 	return client, Collection, nil
 }

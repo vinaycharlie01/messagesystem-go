@@ -17,7 +17,7 @@ type Product struct {
 }
 
 type User struct {
-	ID        int       `bson:"_id,omitempty" json:"id"`
+	ID        int       `bson:"_id,omitempty" json:"user_id"`
 	Name      string    `bson:"name" json:"name"`
 	Mobile    string    `bson:"mobile" json:"mobile"`
 	Latitude  float64   `bson:"latitude" json:"latitude"`
