@@ -4,88 +4,111 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
-	m1 "myapp/Producer/mongo1"
-	t1 "myapp/Producer/templete"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	m1 "myapp/Producer/mongo1"
+
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/stretchr/testify/assert"
 )
 
-func setupTestServer() *gin.Engine {
-	// Initialize the MongoDB client and collections for testing
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(context.Background(), clientOptions)
+func TestCreateProduct(t *testing.T) {
+
+	// Connect to MongoDB and initialize collections
+	client, _, err := m1.MongoConnect("vinay1", "product")
 	if err != nil {
 		log.Fatal(err)
 	}
-	m1.Collection = client.Database("vinay1").Collection("products") // Use a test database
-
-	// Initialize the Gin router
-	r := gin.Default()
-
-	// Define an endpoint to create a product
-	r.POST("/create-product", CreateProduct)
-
-	return r
-}
-
-func TestCreateProductEndpoint(t *testing.T) {
-	// Setup a test Gin server
-	r := setupTestServer()
-
-	// Define the test data for creating a product
-	productData := t1.Product{
-		// UserID:            1,
-		ID:                 1,
-		ProductName:        "Test Product",
-		ProductDescription: "This is a test product",
-		ProductImages:      []string{"test-image1.jpg", "test-image2.jpg"},
-		ProductPrice:       19.99,
+	defer client.Disconnect(context.Background())
+	gin.SetMode(gin.TestMode)
+	samples := []struct {
+		inputJSON    string
+		statusCode   int
+		user_id      int
+		product_name string
+		errMessage   string
+	}{
+		{
+			inputJSON: `{
+				"user_id": 1030,
+				"product_name": "Sample Product",
+				"product_description": "This is a sample product description.",
+				"product_images": [
+					"https://images.unsplash.com/5/unsplash-kitsune-4.jpg?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bc01c83c3da0425e9baa6c7a9204af81",
+					"https://media.wired.com/photos/593261cab8eb31692072f129/master/w_2240,c_limit/85120553.jpg"
+				],
+				"product_price": 29.99
+			}`,
+			statusCode:   201,
+			user_id:      1030,
+			product_name: "Sample Product",
+			errMessage:   "",
+		},
+		{
+			inputJSON: `{
+				"user_id": 1022,
+				"product_name": "Sample Product",
+				"product_description": "This is a sample product description.",
+				"product_images": [
+					"https://images.unsplash.com/5/unsplash-kitsune-4.jpg?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bc01c83c3da0425e9baa6c7a9204af81",
+					"https://media.wired.com/photos/593261cab8eb31692072f129/master/w_2240,c_limit/85120553.jpg"
+				],
+				"product_price": 29.99
+			}`,
+			statusCode:   500,
+			user_id:      0,
+			product_name: "",
+			errMessage:   "",
+		},
+		{
+			inputJSON: `{
+				"user_id":",
+				"product_name": "Sample Product",
+				"product_description": "This is a sample product description.",
+				"product_images": [
+					"https://images.unsplash.com/5/unsplash-kitsune-4.jpg?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bc01c83c3da0425e9baa6c7a9204af81",
+					"https://media.wired.com/photos/593261cab8eb31692072f129/master/w_2240,c_limit/85120553.jpg"
+				],
+				"product_price": 29.99
+			}`,
+			statusCode:   400,
+			user_id:      0,
+			product_name: "",
+			errMessage:   "invalid character '\\n' in string literal",
+		},
 	}
-
-	// Convert product data to JSON
-	productJSON, err := json.Marshal(productData)
-	if err != nil {
-		t.Fatalf("Failed to marshal product data: %v", err)
-	}
-
-	// Create a POST request with the JSON payload
-	req, err := http.NewRequest("POST", "/create-product", bytes.NewReader(productJSON))
-	if err != nil {
-		t.Fatalf("Failed to create HTTP request: %v", err)
-	}
-
-	// Create a response recorder to capture the response
-	w := httptest.NewRecorder()
-
-	// Serve the request
-	r.ServeHTTP(w, req)
-
-	// Check the HTTP status code
-	if w.Code != http.StatusCreated {
-		t.Errorf("Expected status code %d, got %d", http.StatusCreated, w.Code)
-	}
-
-	// Parse the response body
-	var response map[string]interface{}
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
-
-	// Check if the response contains the expected message
-	if message, ok := response["message"].(string); ok {
-		if message != "Product created successfully" {
-			t.Errorf("Expected message 'Product created successfully', got '%s'", message)
+	for _, v := range samples {
+		r := gin.Default()
+		r.POST("/create-product", CreateProduct)
+		req, err := http.NewRequest(http.MethodPost, "/create-product", bytes.NewBufferString(v.inputJSON))
+		if err != nil {
+			t.Errorf("this is the error: %v\n", err)
 		}
-	} else {
-		t.Errorf("Expected 'message' field in the response")
-	}
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, req)
 
-	// Optionally, you can perform additional checks to verify the data in the database.
+		responseMap := make(map[string]interface{})
+		err = json.Unmarshal(rr.Body.Bytes(), &responseMap)
+		if err != nil {
+			t.Errorf("Cannot convert to json: %v", err)
+		}
+		fmt.Println("this is the response data: ", responseMap)
+		assert.Equal(t, rr.Code, v.statusCode)
+		resout, _ := responseMap["product"]
+		res, ok := resout.(map[string]interface{})
+		if v.statusCode == 201 && ok {
+			val, _ := res["user_id"]
+			assert.Equal(t, int(val.(float64)), v.user_id)
+			assert.Equal(t, res["product_name"], v.product_name)
+		}
+
+		if v.statusCode == 400 {
+			assert.Equal(t, responseMap["error"], v.errMessage)
+		}
+
+	}
 }

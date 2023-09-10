@@ -1,84 +1,84 @@
-// kafka/producer_test.go
-
 package kafka
 
 import (
-	"log"
+	"context"
+	"os"
 	"testing"
-	"time"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/stretchr/testify/mock"
 )
 
-var conn *kafka.Conn
-
-type MockKafkaConnection struct {
-	mock.Mock
-}
-
-func (m *MockKafkaConnection) SetWriteDeadline(time.Time) error {
-	args := m.Called(time.Now())
-	return args.Error(0)
-}
-
-func (m *MockKafkaConnection) WriteMessages(messages ...kafka.Message) (int, error) {
-	args := m.Called(messages)
-	return args.Int(0), args.Error(1)
-}
-
-func (m *MockKafkaConnection) Close() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
 func TestInsertintoKafka(t *testing.T) {
-	// Create a mock Kafka connection
-	mockConn := new(MockKafkaConnection)
-	productID := 123
-	conn1, err := InsertintoKafka(productID)
+	// Replace this with your Kafka broker address if it's different from localhost:9092.
+	brokerAddress := "localhost:9092"
+	topic := "my-topic"
+	partition := 0
+
+	// You can use a test Kafka broker or a mocking library for Kafka in unit tests.
+	// For simplicity, we'll use a test broker here.
+
+	// Connect to the Kafka broker.
+	conn, err := kafka.DialLeader(context.Background(), "tcp", brokerAddress, topic, partition)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("failed to dial leader: %v", err)
 	}
-	conn = conn1
-	// Define the test product ID
-	// productID := 123 // Example product ID
+	defer conn.Close()
 
-	// Expectations for the mock Kafka connection
-	mockConn.On("SetWriteDeadline", mock.AnythingOfType("time.Time")).Return(nil)
-	mockConn.On("WriteMessages", mock.AnythingOfType("[]kafka.Message")).Return(1, nil)
-	mockConn.On("Close").Return(nil)
+	// Call the function and check for errors.
+	p1 := 42 // Replace with your test data
+	_, err = InsertintoKafka(p1)
+	if err != nil {
+		t.Fatalf("failed to insert into Kafka: %v", err)
+	}
 
-	// Call the function to insert into Kafka, passing the mock connection
-	InsertintoKafka(productID)
-	// Assert that the expectations were met
-	mockConn.AssertExpectations(t)
-
-	// Assert that there is no error returned
-	// if err != nil {
-	// 	t.Errorf("Expected no error, got: %v", err)
-	// }
+	// Additional testing logic if needed, e.g., verify messages are written correctly.
 }
 
 func TestReceiveLatestFromKafka(t *testing.T) {
-	tests := []struct {
-		name    string
-		want    int
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-		{
-			name:    "test1",
-			want:    29,
-			wantErr: true,
-		},
+	// // Replace this with your Kafka broker address if it's different from localhost:9092.
+	// brokerAddress := "localhost:9092"
+	// topic := "my-topic"
+	// partition := 0
+
+	// // You can use a test Kafka broker or a mocking library for Kafka in unit tests.
+	// // For simplicity, we'll use a test broker here.
+
+	// // Create a Kafka writer to produce a test message.
+	// conn, err := kafka.DialLeader(context.Background(), "tcp", brokerAddress, topic, partition)
+	// if err != nil {
+	// 	t.Fatalf("failed to dial leader: %v", err)
+	// }
+	// defer conn.Close()
+
+	// messageValue := []byte("123") // Replace with your test data
+	// _, err = conn.WriteMessages(kafka.Message{Value: messageValue})
+	// if err != nil {
+	// 	t.Fatalf("failed to write test message to Kafka: %v", err)
+	// }
+
+	// Call the function and check for errors.
+	result, err := ReceiveLatestFromKafka()
+	if err != nil {
+		t.Fatalf("failed to receive from Kafka: %v", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ReceiveLatestFromKafka()
-			if err != nil && got != 28 {
-				t.Error("error in kafka")
-			}
-		})
+
+	// Check if the received result matches the expected result.
+	expectedResult := 42 // Replace with the expected result from your test message
+	if result != expectedResult {
+		t.Errorf("expected result %d, got %d", expectedResult, result)
 	}
+}
+
+func TestMain(m *testing.M) {
+	// Set up any test-specific configuration here.
+	// For example, you can start a test Kafka broker.
+
+	// Run the tests.
+	code := m.Run()
+
+	// Clean up any resources here.
+	// For example, you can stop the test Kafka broker.
+
+	// Exit with the test result code.
+	os.Exit(code)
 }
